@@ -1,0 +1,41 @@
+- name: add beats repo-key
+  apt_key:
+    keyserver: pgp.mit.edu
+    id: D27D666CD88E42B4
+    state: present
+
+- name: add beats deb repo
+  apt_repository:
+    repo: deb https://artifacts.elastic.co/packages/5.x/apt stable main
+    state: present
+    filename: 'beats'
+
+- name: install metricbeat
+  apt: pkg={{item}} state=present
+  with_items:
+    - apt-transport-https
+    - metricbeat={{metricbeat_version}}
+
+- name: enable metricbeat
+  service:
+    name: metricbeat
+    enabled: yes
+
+- name: place metricbeat config
+  template:
+    src: ../files/metricbeat/metricbeat.yml
+    dest: /etc/metricbeat/metricbeat.yml
+  notify:
+    - restart metricbeat
+
+- name: ensure metricbeat service running
+  service: name=metricbeat state=started
+
+- name: place logstash configs
+  template:
+    src: '{{ item.src }}'
+    dest: '/etc/logstash/{{ item.path }}'
+  with_filetree: "../files/logstash/"
+  when: item.state == "file"
+  notify:
+    - restart logstash
