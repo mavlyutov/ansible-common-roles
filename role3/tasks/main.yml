@@ -1,0 +1,2 @@
+- name: echo role3 name
+  shell: echo role3
